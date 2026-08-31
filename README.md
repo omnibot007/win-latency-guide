@@ -13,6 +13,33 @@ worse on this hardware.
 
 ---
 
+## ⚠️ Read this before you run anything
+
+**This is not a copy-paste pack.** These values were measured on the rig above. Some findings are
+universal; many are hardware-specific and will do nothing — or harm — elsewhere.
+
+**Step 1 is always the audit.** It changes nothing and tells you what applies to *your* machine:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\Audit-System.ps1
+```
+
+It detects your CPU topology (hybrid or not), RAM, GPU, NIC, whether you're on a laptop, your
+current tweak state, live DPC latency, and crash history — then tells you which tweaks apply and
+which to skip.
+
+> ### 🤖 Using an AI assistant to apply this?
+> Point it at **[`AGENTS.md`](AGENTS.md)** first.
+>
+> It instructs the assistant to audit your hardware before recommending anything, adapt values
+> instead of copying them, refuse tweaks with no measured problem to solve, verify backups, and
+> present a numbered list for your approval before deleting or disabling anything.
+>
+> Blindly applying another machine's tweaks is precisely what caused the boot loop this repo
+> documents. The goal is **best performance that is still stable** — not maximum tweaks.
+
+---
+
 ## Start here: the bug that started all this
 
 A tweak pack set this:
@@ -141,33 +168,52 @@ ownership in their headers, and the split is enforced by convention:
 
 ## Scripts
 
-| Script | Purpose |
-|---|---|
-| `AllInOne-Apply.ps1` | Main apply. Idempotent, runs at logon |
-| `LatencyLab-Boot.ps1` | Logon persistence + in-game watcher |
-| `optimize-and-stabilize.ps1` | One-shot fix with real `.reg` backups + restore point |
-| `revert-optimize.ps1` | Undo. Verifies backups exist before claiming success |
-| `Restore-EngineIni.ps1` | Rebuilds Fortnite `Engine.ini` (the game deletes it) |
-| `Match-Benchmark.ps1` | Samples ping/jitter/DPC/saturation during a real match |
-| `Enable-WindowsUpdate.ps1` | Restores Windows Update to stock |
+| Script | Purpose | Safe to run blind? |
+|---|---|---|
+| **`Audit-System.ps1`** | **Read-only. Detects your hardware, reports state, says what applies to you** | **Yes — changes nothing** |
+| `Match-Benchmark.ps1` | Samples ping/jitter/DPC/saturation during a real match | Yes — read-only |
+| `optimize-and-stabilize.ps1` | One-shot fix with verified `.reg` backups + restore point | Read it first |
+| `revert-optimize.ps1` | Undo. Refuses to run if backups are missing | Yes |
+| `AllInOne-Apply.ps1` | Main apply. Idempotent, runs at logon | Read it first |
+| `LatencyLab-Boot.ps1` | Logon persistence + in-game watcher | Rig-specific |
+| `Restore-EngineIni.ps1` | Rebuilds Fortnite `Engine.ini` (the game deletes it) | Fortnite only |
+| `Enable-WindowsUpdate.ps1` | Restores Windows Update to stock | Yes |
 
 ---
 
 ## Usage
 
 ```powershell
-# Inspect first. Nothing here should be run blind.
+# 1. ALWAYS start here. Read-only. Tells you what applies to your hardware.
+powershell -ExecutionPolicy Bypass -File .\scripts\Audit-System.ps1
+
+# 2. Read the reference before changing anything.
+#    docs/TWEAK-REFERENCE.md  - every tweak with a verdict
+#    AGENTS.md                - if an AI is doing this for you
+
+# 3. Inspect the script yourself.
 notepad .\scripts\optimize-and-stabilize.ps1
 
-# Run elevated. Makes .reg backups and a restore point BEFORE changing anything.
+# 4. Run elevated. Makes verified .reg backups and a restore point FIRST.
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\optimize-and-stabilize.ps1
 
-# Undo
+# 5. Undo at any point.
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\revert-optimize.ps1
 ```
 
-> **Read before running.** These are tuned for the reference rig above. The svchost and core
-> parking fixes are universal; the NIC, GPU and `Engine.ini` values are hardware-specific.
+### Benchmarking your own machine
+
+```powershell
+# Run before you queue, then play a real match. 25 min of samples.
+powershell -ExecutionPolicy Bypass -File .\scripts\Match-Benchmark.ps1
+```
+
+Reports ping, jitter, spike count, downlink saturation, CPU, DPC, parked cores, and whether game
+priority held under load. **Uses no ETW or PresentMon** — see the anti-cheat note below.
+
+> **These are tuned for the reference rig.** The svchost threshold and core parking fixes are
+> universal. NIC, GPU, `Engine.ini` and FPS-cap values are hardware-specific — run the audit and
+> adapt them.
 
 ---
 

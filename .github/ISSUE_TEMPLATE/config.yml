@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Machine won't boot after applying something
+    url: https://github.com/omnibot007/win-latency-guide/blob/main/docs/RECOVERY.md
+    about: Start here - five recovery routes from System Restore to offline registry editing.
+  - name: Which tweaks apply to my hardware?
+    url: https://github.com/omnibot007/win-latency-guide/blob/main/scripts/Audit-System.ps1
+    about: Run Audit-System.ps1 - read-only, tells you what's relevant to your machine.

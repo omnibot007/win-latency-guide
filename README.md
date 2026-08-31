@@ -168,6 +168,8 @@ ownership in their headers, and the split is enforced by convention:
 | Doc | What's in it |
 |---|---|
 | **[Recovery](docs/RECOVERY.md)** | **Your PC will not boot? Start here. Bookmark it before you tweak** |
+| [Contributing](CONTRIBUTING.md) | How to submit a measured result. Negative results welcome |
+| [Changelog](CHANGELOG.md) | What changed and why, including bugs found in this repo itself |
 | **[Full inventory](docs/FULL-INVENTORY.md)** | **Every single change - all 200+ values, services, tasks and app settings** |
 | [BSOD writeup](docs/BSOD-CRITICAL_PROCESS_DIED.md) | Full root-cause analysis with evidence |
 | [Tweak reference](docs/TWEAK-REFERENCE.md) | Every tweak, with verdict and reasoning |

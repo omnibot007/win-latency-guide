@@ -1,0 +1,24 @@
+# Normalise line endings so contributors on different platforms don't
+# generate spurious whole-file diffs, and git stops warning on every commit.
+
+* text=auto eol=lf
+
+# PowerShell and batch are consumed by Windows tooling - keep CRLF on checkout.
+*.ps1  text eol=crlf
+*.psm1 text eol=crlf
+*.cmd  text eol=crlf
+*.bat  text eol=crlf
+
+# Windows .ini/.reg files are parsed by Windows components.
+*.ini  text eol=crlf
+*.reg  text eol=crlf
+
+# Docs and data stay LF.
+*.md   text eol=lf
+*.json text eol=lf
+
+# Never touch binaries.
+*.exe  binary
+*.dll  binary
+*.zip  binary
+*.png  binary

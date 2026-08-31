@@ -138,16 +138,6 @@ try {
 } catch { Log "HKCU FAILED: $($_.Exception.Message)" }
 
 # ---------------------------------------------------------------
-# 6. Report
-# ---------------------------------------------------------------
-try {
-    $parked = @((Get-Counter '\Processor Information(*)\Parking Status' -EA SilentlyContinue).CounterSamples |
-                Where-Object { $_.InstanceName -notmatch '_Total' -and $_.CookedValue -eq 1 })
-    $sv = (Get-Process svchost -EA SilentlyContinue).Count
-    Log "state: svchost=$sv parkedCores=$($parked.Count)/32"
-} catch { }
-
-# ---------------------------------------------------------------
 # 7. Keep Windows Update OFF.
 #    It was pulling 169-330 Mbps mid-match and spiking ping to
 #    ~500-800ms. WaaSMedicSvc is Windows' self-heal service and will
@@ -175,6 +165,49 @@ if ($elevated -and -not (Test-Path 'C:\LatencyLab\WINDOWS_UPDATE_ENABLED')) {
         Set-ItemProperty $au -Name 'AUOptions' -Value 1 -Type DWord -Force
         if ($changed -gt 0) { Log "Windows Update re-disabled ($changed service(s) had come back)" }
     } catch { Log "WU disable FAILED: $($_.Exception.Message)" }
+}
+
+# ---------------------------------------------------------------
+# 8. Small, documented items. These persist on their own; re-asserted
+#    only to repair drift from Windows updates or vendor software.
+# ---------------------------------------------------------------
+if ($elevated) {
+    try {
+        # MMCSS Games profile. On the reference machine this task had only 3
+        # usable values while every other profile had 7-9, and it carried
+        # NetworkThrottlingIndex + SystemResponsiveness in a task subkey where
+        # nothing reads them. 'Latency Sensitive' is documented as functional;
+        # 'SFIO Priority' is questioned even by djdallmann - applied because it
+        # is zero-risk, not because it is proven.
+        $gm = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games'
+        if (Test-Path $gm) {
+            foreach ($v in @('NetworkThrottlingIndex','SystemResponsiveness')) {
+                if ($null -ne (Get-ItemProperty $gm -Name $v -EA SilentlyContinue).$v) {
+                    Remove-ItemProperty $gm -Name $v -Force -EA SilentlyContinue
+                    Log "removed misplaced $v from Tasks\Games (inert there)"
+                }
+            }
+            Set-ItemProperty $gm -Name 'Affinity'          -Value 0       -Type DWord  -Force
+            Set-ItemProperty $gm -Name 'Background Only'   -Value 'False' -Type String -Force
+            Set-ItemProperty $gm -Name 'Clock Rate'        -Value 10000   -Type DWord  -Force
+            Set-ItemProperty $gm -Name 'SFIO Priority'     -Value 'High'  -Type String -Force
+            Set-ItemProperty $gm -Name 'Latency Sensitive' -Value 'True'  -Type String -Force
+        }
+
+        # NDIS nap suppression - stops the NIC power-napping.
+        $nd = 'HKLM:\SYSTEM\CurrentControlSet\Services\NDIS\Parameters'
+        if (-not (Test-Path $nd)) { New-Item -Path $nd -Force | Out-Null }
+        Set-ItemProperty $nd -Name 'DisableNaps' -Value 1 -Type DWord -Force
+
+        # Energy/reliability logging - small constant background writes.
+        $te = 'HKLM:\SYSTEM\CurrentControlSet\Control\Power\EnergyEstimation\TaggedEnergy'
+        if (-not (Test-Path $te)) { New-Item -Path $te -Force | Out-Null }
+        Set-ItemProperty $te -Name 'DisableTaggedEnergyLogging' -Value 1 -Type DWord -Force
+        Set-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Control\Power' -Name 'EventProcessorEnabled' -Value 0 -Type DWord -Force
+        Set-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Reliability' -Name 'TimeStampInterval' -Value 0 -Type DWord -Force
+
+        Log 'MMCSS Games profile + NDIS naps + energy logging re-asserted'
+    } catch { Log "section 8 FAILED: $($_.Exception.Message)" }
 }
 
 # ---------------------------------------------------------------

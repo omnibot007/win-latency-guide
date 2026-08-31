@@ -1,0 +1,276 @@
+{
+  "$comment": "Machine-readable tweak database. Tools and AI agents can parse this instead of scraping markdown. Every entry carries a verdict, the condition under which it applies, and a risk rating. See AGENTS.md for the rules on using it.",
+  "schema_version": "1.0",
+  "measured_on": {
+    "cpu": "Intel i9-13900KF",
+    "cpu_hybrid": true,
+    "cores": "8P/16E, 32 threads",
+    "ram_gb": 32,
+    "gpu": "NVIDIA RTX 4070 12GB",
+    "nic": "Intel I225-V 2.5GbE",
+    "display_hz": 500,
+    "os": "Windows 10 Home 19045",
+    "form_factor": "desktop"
+  },
+  "verdicts": {
+    "keep": "Measured benefit. Apply if the condition matches.",
+    "remove": "No benefit or actively harmful. Remove if present.",
+    "reject": "Commonly recommended, does not survive measurement.",
+    "neutral": "Harmless but does nothing measurable."
+  },
+  "risk": {
+    "none": "Cannot cause instability.",
+    "low": "Reversible, no known failure mode.",
+    "medium": "Has a real failure mode under some conditions.",
+    "critical": "Can prevent the machine from booting."
+  },
+  "tweaks": [
+    {
+      "id": "svchost-split-threshold",
+      "name": "SvcHostSplitThresholdInKB",
+      "path": "HKLM\\SYSTEM\\CurrentControlSet\\Control",
+      "value": 3670016,
+      "type": "REG_DWORD",
+      "verdict": "keep",
+      "risk": "critical",
+      "applies_when": "always",
+      "universal": true,
+      "reason": "Setting this at or above installed RAM forces all services into shared svchost processes. DcomLaunch, LSM and Power then share a PID with PlugPlay and DeviceInstall; any fault there kills a critical process and bugchecks 0xEF. Zero performance benefit - it is a RAM-saving setting for low-memory machines.",
+      "evidence": "19 svchost instances when broken vs 55 after fix. Boot loop with bugcheck 0x000000EF.",
+      "reboot_required": true,
+      "doc": "docs/BSOD-CRITICAL_PROCESS_DIED.md"
+    },
+    {
+      "id": "core-parking-class1",
+      "name": "Core parking min cores, Efficiency Class 1 (P-cores)",
+      "path": "HKLM\\SYSTEM\\CurrentControlSet\\Control\\Power\\PowerSettings\\54533251-82be-4824-96c1-47b60b740d00\\0cc5b647-c1df-4637-891a-dec35c318584",
+      "value": 100,
+      "verdict": "keep",
+      "risk": "low",
+      "applies_when": "cpu_hybrid == true",
+      "universal": false,
+      "reason": "Hybrid CPUs have separate parking settings per efficiency class. Class 1 (P-cores) is hidden behind Attributes=1, so guides that set only CPMINCORES leave every P-core parking. Higher class number = higher performance: Class 1 is P-cores, Class 0 is E-cores.",
+      "evidence": "16 of 32 cores parked (exactly threads 0-15, all P-cores) before fix; 0 parked after.",
+      "prerequisite": "Set Attributes=2 on the setting key to unhide it first.",
+      "reboot_required": false
+    },
+    {
+      "id": "core-parking-class0",
+      "name": "Core parking min cores, Efficiency Class 0 (E-cores)",
+      "path": "HKLM\\SYSTEM\\CurrentControlSet\\Control\\Power\\PowerSettings\\54533251-82be-4824-96c1-47b60b740d00\\0cc5b647-c1df-4637-891a-dec35c318583",
+      "value": 100,
+      "verdict": "keep",
+      "risk": "low",
+      "applies_when": "always",
+      "universal": true,
+      "reason": "Standard core parking disable. On non-hybrid CPUs this is the only class.",
+      "reboot_required": false
+    },
+    {
+      "id": "c-states-off",
+      "name": "IDLEDISABLE (processor idle disable)",
+      "value": 1,
+      "verdict": "keep",
+      "risk": "medium",
+      "applies_when": "form_factor == desktop AND no WHEA errors present",
+      "universal": false,
+      "reason": "Cores never enter sleep states, removing wake latency. Costs idle power and heat.",
+      "warning": "Do NOT apply on a laptop - destroys battery life and thermals. Do NOT apply if WHEA errors are present; it will expose marginal CPU stability.",
+      "reboot_required": true
+    },
+    {
+      "id": "win32-priority-separation",
+      "name": "Win32PrioritySeparation",
+      "path": "HKLM\\SYSTEM\\CurrentControlSet\\Control\\PriorityControl",
+      "value": 36,
+      "type": "REG_DWORD",
+      "verdict": "keep",
+      "risk": "low",
+      "applies_when": "always",
+      "universal": true,
+      "reason": "Short quantum with foreground boost. Standard competitive value."
+    },
+    {
+      "id": "mpo-off",
+      "name": "OverlayTestMode (disable Multi-Plane Overlay)",
+      "path": "HKLM\\SOFTWARE\\Microsoft\\Windows\\Dwm",
+      "value": 5,
+      "type": "REG_DWORD",
+      "verdict": "keep",
+      "risk": "low",
+      "applies_when": "always",
+      "universal": true,
+      "reason": "Fixes DWM stutter and flicker.",
+      "warning": "Location matters. The same value under HKLM\\SYSTEM\\CurrentControlSet\\Control\\GraphicsDrivers is INERT. A tweak pack wrote it there and reported success for weeks."
+    },
+    {
+      "id": "ndu-disable",
+      "name": "Ndu service (Network Data Usage monitor)",
+      "path": "HKLM\\SYSTEM\\CurrentControlSet\\Services\\Ndu",
+      "value": 4,
+      "type": "REG_DWORD",
+      "verdict": "keep",
+      "risk": "low",
+      "applies_when": "always",
+      "universal": true,
+      "reason": "Documented DPC latency contributor. Only powers the Settings > Data usage page.",
+      "reboot_required": true
+    },
+    {
+      "id": "tcp1323opts",
+      "name": "Tcp1323Opts",
+      "path": "HKLM\\SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters",
+      "action": "remove",
+      "verdict": "remove",
+      "risk": "low",
+      "applies_when": "always",
+      "reason": "Setting it to 0 disables TCP window scaling. Actively harmful on gigabit+ links. Frequently recommended as a 'latency' tweak."
+    },
+    {
+      "id": "ntfs-memory-usage",
+      "name": "NtfsMemoryUsage",
+      "path": "HKLM\\SYSTEM\\CurrentControlSet\\Control\\FileSystem",
+      "action": "remove",
+      "verdict": "remove",
+      "risk": "low",
+      "applies_when": "always",
+      "reason": "Raises paged-pool pressure for no measurable gain."
+    },
+    {
+      "id": "wait-to-kill-service",
+      "name": "WaitToKillServiceTimeout",
+      "path": "HKLM\\SYSTEM\\CurrentControlSet\\Control",
+      "action": "remove",
+      "verdict": "remove",
+      "risk": "low",
+      "applies_when": "always",
+      "reason": "Aggressive values force-kill slow services at shutdown for zero in-game benefit.",
+      "gotcha": "Windows reads this as REG_SZ only. Written as REG_DWORD it is silently ignored - it reads back correctly but does nothing. Always check GetValueKind, not just the value."
+    },
+    {
+      "id": "hung-app-timeout",
+      "name": "HungAppTimeout / AutoEndTasks",
+      "path": "HKCU\\Control Panel\\Desktop",
+      "value": { "HungAppTimeout": "5000", "AutoEndTasks": "0" },
+      "type": "REG_SZ",
+      "verdict": "remove",
+      "risk": "medium",
+      "applies_when": "always",
+      "reason": "Aggressive values (1000/1) can force-kill the game during a brief shader-compile hang. Zero FPS benefit. These are Windows defaults."
+    },
+    {
+      "id": "low-level-hooks-timeout",
+      "name": "LowLevelHooksTimeout",
+      "path": "HKCU\\Control Panel\\Desktop",
+      "value": "1000",
+      "type": "REG_SZ",
+      "verdict": "keep",
+      "risk": "low",
+      "applies_when": "always",
+      "reason": "Unlike the other kill timeouts, this one IS an input-path tweak - it drops a hung mouse or keyboard hook faster (Discord overlay, RTSS)."
+    },
+    {
+      "id": "mouse-accel-off",
+      "name": "Pointer precision off (1:1 mouse)",
+      "path": "HKCU\\Control Panel\\Mouse",
+      "value": { "MouseSpeed": "0", "MouseThreshold1": "0", "MouseThreshold2": "0" },
+      "type": "REG_SZ",
+      "verdict": "keep",
+      "risk": "none",
+      "applies_when": "always",
+      "universal": true,
+      "reason": "Removes acceleration. Essential for consistent aim."
+    },
+    {
+      "id": "useplatformclock",
+      "name": "bcdedit useplatformclock",
+      "verdict": "reject",
+      "risk": "medium",
+      "applies_when": "never",
+      "reason": "Forces HPET. Actively harmful on modern Intel/AMD. Leaving it unset is correct. Widely recommended by older guides."
+    },
+    {
+      "id": "network-throttling-disabled",
+      "name": "NetworkThrottlingIndex = 0xFFFFFFFF",
+      "verdict": "reject",
+      "risk": "low",
+      "applies_when": "never",
+      "reason": "Fully disabling removes the network stack's DPC pacing for no measured gain. With SystemResponsiveness=0 the throttle window is already minimal. Use the Windows default of 10.",
+      "note": "This value being written by two different tweak packs with different numbers was one half of the conflict that made system state non-deterministic."
+    },
+    {
+      "id": "cpu-affinity-restrict",
+      "name": "Pin game to a subset of cores (e.g. affinity 0x555)",
+      "verdict": "reject",
+      "risk": "high",
+      "applies_when": "never",
+      "reason": "Catastrophic on a many-threaded CPU. Windows Thread Director handles hybrid scheduling better than a static mask."
+    },
+    {
+      "id": "disable-ecores",
+      "name": "Disable E-cores in BIOS",
+      "verdict": "reject",
+      "risk": "low",
+      "applies_when": "never",
+      "reason": "TechPowerUp's 53-game test found it mostly a wash. Pinning background applications to E-cores is strictly better than disabling them.",
+      "source": "https://www.techpowerup.com/review/rtx-4090-53-games-core-i9-13900k-e-cores-enabled-vs-disabled/"
+    },
+    {
+      "id": "tdr-delay",
+      "name": "TdrDelay / TdrDdiDelay / TdrLevel",
+      "verdict": "reject",
+      "risk": "low",
+      "applies_when": "never",
+      "reason": "No FPS benefit. Raising TdrDelay only delays recovery from a GPU hang. The source pack's own logs contradicted themselves (4/4/3 vs 8/8/3)."
+    },
+    {
+      "id": "csrss-ifeo",
+      "name": "csrss.exe IFEO PerfOptions",
+      "path": "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Image File Execution Options\\csrss.exe",
+      "action": "remove",
+      "verdict": "remove",
+      "risk": "low",
+      "applies_when": "always",
+      "reason": "csrss already runs at high priority. No measurable gain from forcing it."
+    },
+    {
+      "id": "afd-buffers",
+      "name": "AFD DefaultReceiveWindow / DefaultSendWindow",
+      "value": 16384,
+      "verdict": "neutral",
+      "risk": "none",
+      "applies_when": "always",
+      "reason": "Harmless but placebo for UDP games - these are TCP socket buffers."
+    },
+    {
+      "id": "engine-ini-readonly",
+      "name": "Fortnite Engine.ini overlay, set read-only",
+      "verdict": "keep",
+      "risk": "low",
+      "applies_when": "game == fortnite",
+      "reason": "Fortnite deletes Engine.ini on exit and regenerates it on launch. Writing at logon and restoring on exit both fail. Setting the file read-only is the only approach that survives."
+    },
+    {
+      "id": "one-frame-thread-lag",
+      "name": "r.OneFrameThreadLag=0 / r.GTSyncType=1",
+      "verdict": "remove",
+      "risk": "low",
+      "applies_when": "never",
+      "reason": "Saves roughly one frame of input lag by preventing CPU run-ahead. Measured cost: 480 FPS to 300-400. At 500Hz that is 2.08ms/frame vs 3.33ms/frame - it charges 1.25ms on every frame to save one frame once. Net loss at high refresh.",
+      "note": "May still be worth it at 60-144Hz where frame time dominates differently. Measure on your own display."
+    }
+  ],
+  "not_a_pc_problem": [
+    {
+      "issue": "Downlink saturation",
+      "finding": "330 Mbps peaks mid-match spiking ping to 500-800ms. Windows cannot rate-limit inbound traffic; the queue fills upstream at the ISP, past the NIC. No registry value affects this.",
+      "fix": "Router-level SQM/QoS, or eliminate the source of the traffic."
+    },
+    {
+      "issue": "Windows Update consuming bandwidth mid-game",
+      "finding": "MoUsoCoreWorker downloads at full line speed with no regard for foreground applications.",
+      "fix": "Delivery Optimization bandwidth caps, or disable wuauserv + UsoSvc + DoSvc + WaaSMedicSvc. WaaSMedicSvc is the self-heal service that silently re-enables the others.",
+      "tradeoff": "Disabling updates means no security patches. State it explicitly to the user."
+    }
+  ]
+}

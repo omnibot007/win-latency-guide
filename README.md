@@ -162,9 +162,13 @@ ownership in their headers, and the split is enforced by convention:
 
 | Doc | What's in it |
 |---|---|
+| **[Recovery](docs/RECOVERY.md)** | **Your PC won't boot? Start here. Bookmark it before you tweak** |
 | [BSOD writeup](docs/BSOD-CRITICAL_PROCESS_DIED.md) | Full root-cause analysis with evidence |
 | [Tweak reference](docs/TWEAK-REFERENCE.md) | Every tweak, with verdict and reasoning |
+| [Baseline](docs/BASELINE.md) | Real measured numbers — what "good" looks like |
 | [Lessons](docs/LESSONS.md) | What didn't work, and traps that cost hours |
+| [AGENTS.md](AGENTS.md) | Rules for AI assistants applying this for you |
+| [`data/tweaks.json`](data/tweaks.json) | Machine-readable database — verdict, condition, risk per tweak |
 
 ## Scripts
 

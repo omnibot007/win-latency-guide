@@ -225,8 +225,11 @@ if ($elevated) {
     try { Line 'Secure Boot' "$(Confirm-SecureBootUEFI)" } catch { Line 'Secure Boot' 'unreadable' }
     $bcd = bcdedit /enum "{current}" | Out-String
     foreach ($k in @('disabledynamictick','useplatformclock','useplatformtick')) {
-        $l = ($bcd -split "`n") | Where-Object { $_ -match $k }
-        Line $k $(if ($l) { ($l -replace '\s+',' ').Trim() } else { '<not set>' })
+        $l = ($bcd -split "`n") | Where-Object { $_ -match "^\s*$k\s" } | Select-Object -First 1
+        # Strip the key name off the front - bcdedit prints "key    value" and
+        # passing the whole line to Line() printed the key twice.
+        $val = if ($l) { ($l -replace "^\s*$k\s+", '' -replace '\s+', ' ').Trim() } else { '<not set>' }
+        Line $k $val
     }
     if ($bcd -match 'useplatformclock\s+Yes') {
         Verdict "useplatformclock=Yes forces HPET - usually HARMFUL on modern CPUs" 'bad'

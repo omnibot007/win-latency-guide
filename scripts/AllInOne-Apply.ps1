@@ -57,7 +57,10 @@ if ($elevated) {
 # ---------------------------------------------------------------
 if ($elevated) {
     try {
-        $scheme = '0eeb3a79-fd9e-49e8-8266-b682359b75ce'   # Ultimate Performance
+        # Use the ACTIVE power scheme. Hardcoding Ultimate Performance silently
+        # no-ops on machines where that plan does not exist (most laptops).
+        $scheme = ((powercfg /getactivescheme | Out-String) -replace '(?s).*GUID:\s*([0-9a-f-]{36}).*', '$1').Trim()
+        if (-not $scheme) { $scheme = 'SCHEME_CURRENT' }
         $sub    = 'HKLM:\SYSTEM\CurrentControlSet\Control\Power\PowerSettings\54533251-82be-4824-96c1-47b60b740d00'
         $c0min = '0cc5b647-c1df-4637-891a-dec35c318583'
         $c1min = '0cc5b647-c1df-4637-891a-dec35c318584'
@@ -233,7 +236,10 @@ if ($elevated) {
 # ---------------------------------------------------------------
 if ($elevated) {
     try {
-        $scheme = '0eeb3a79-fd9e-49e8-8266-b682359b75ce'   # Ultimate Performance
+        # Use the ACTIVE power scheme. Hardcoding Ultimate Performance silently
+        # no-ops on machines where that plan does not exist (most laptops).
+        $scheme = ((powercfg /getactivescheme | Out-String) -replace '(?s).*GUID:\s*([0-9a-f-]{36}).*', '$1').Trim()
+        if (-not $scheme) { $scheme = 'SCHEME_CURRENT' }
         $sub    = 'HKLM:\SYSTEM\CurrentControlSet\Control\Power\PowerSettings\54533251-82be-4824-96c1-47b60b740d00'
         $c0min = '0cc5b647-c1df-4637-891a-dec35c318583'
         $c1min = '0cc5b647-c1df-4637-891a-dec35c318584'

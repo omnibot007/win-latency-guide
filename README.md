@@ -227,6 +227,25 @@ priority held under load. **Uses no ETW or PresentMon** — see the anti-cheat n
 
 ---
 
+## Adapting to your machine
+
+Things the scripts assume, and what happens if they don't hold:
+
+| Assumption | If it doesn't apply to you |
+|---|---|
+| Logs live in `C:\LatencyLab\logs` | Self-creates on first run. Change the `$log` path at the top of any script to relocate it |
+| `LatencyLab-Boot.ps1` matches `*NVIDIA GeForce RTX 4070*` and `*I225*` | Guarded by `-like` checks, so it **safely no-ops** on other hardware. Edit the match strings for your GPU/NIC |
+| Backups go to `%USERPROFILE%\.backup` | Resolves per-user — no edit needed |
+| Power scheme | Scripts read your **active** scheme rather than assuming Ultimate Performance, so they work on any plan |
+| `Engine.ini` overlay | Fortnite-specific, and `PoolSize=4096` is sized for 12GB VRAM. Adjust for your card |
+| FPS cap `800` | Derived from a 500Hz panel. Set yours from your own refresh rate |
+| E-core pinning | Only meaningful on a hybrid CPU. `Audit-System.ps1` tells you whether yours is |
+
+Nothing here fails destructively on mismatched hardware — the worst case is a tweak that quietly
+does nothing. Run the audit and it'll tell you which ones those are.
+
+---
+
 ## Anti-cheat note
 
 Nothing here injects, hooks, or reads game memory. It's registry values, power settings, process

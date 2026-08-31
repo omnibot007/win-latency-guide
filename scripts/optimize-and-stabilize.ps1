@@ -14,7 +14,7 @@ if (-not $pr.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
 }
 
 $stamp = Get-Date -Format "yyyyMMdd-HHmmss"
-$bk    = "C:\Users\Saqcrifice\.backup\stabilize-$stamp"
+$bk    = (Join-Path $env:USERPROFILE ".backup\stabilize-$stamp")
 New-Item -ItemType Directory -Force -Path $bk | Out-Null
 Write-Host "Backups -> $bk"  -ForegroundColor Cyan
 Write-Host ""

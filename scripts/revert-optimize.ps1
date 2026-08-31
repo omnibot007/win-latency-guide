@@ -16,7 +16,7 @@ if (-not $pr.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
 }
 
 if (-not $Backup) {
-    $cand = Get-ChildItem "C:\Users\Saqcrifice\.backup" -Directory -Filter "stabilize-*" -ErrorAction SilentlyContinue |
+    $cand = Get-ChildItem (Join-Path $env:USERPROFILE ".backup") -Directory -Filter "stabilize-*" -ErrorAction SilentlyContinue |
             Sort-Object Name -Descending | Select-Object -First 1
     if (-not $cand) {
         Write-Host "No stabilize-* backup folder found. Nothing to revert from." -ForegroundColor Red

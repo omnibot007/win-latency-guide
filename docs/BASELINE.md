@@ -87,6 +87,38 @@ will take the wall off you every time.
 
 ---
 
+## Verified end state — measured in-game
+
+After the refresh-locked cap and the Engine.ini v2 change, captured live with Fortnite running:
+
+```
+Reported FPS   : 500, consistent        <- pinned at cap, NOT GPU-limited
+Frame time     : 2.00 ms exactly
+Ratio          : 1.00x refresh          <- one frame per scan-out
+CPU total      : 9.5%                   <- enormous headroom
+Cores parked   : 0 of 32
+Game priority  : High (IFEO holding)
+Affinity       : 0xFFFFFFFF (all 32 threads)
+Ping           : 20.8 ms, 7 ms jitter
+```
+
+**Pinned at the cap with the GPU not maxed is the target state.** Frame times stay flat, the card
+runs cooler, and every frame lands on a scan-out boundary. Capped-with-headroom beats uncapped.
+
+### A note on DPC under load
+
+```
+idle:      CPU 14 = 0.94%
+at 500fps: CPU 14 = 6.24%    CPU 8 = 1.95%    everything else = 0%
+```
+
+CPU 14 is the core the GPU's interrupts are deliberately pinned to. Higher frame rate means more
+GPU interrupts, so elevated DPC *on that core specifically* is the affinity policy working — the
+load is **contained on one core** instead of scattered across the scheduler. Judge DPC by whether
+it is isolated, not only by its peak value.
+
+---
+
 ## The tweak that measured worse
 
 Applying `r.OneFrameThreadLag=0` and `r.GTSyncType=1` — both widely recommended:

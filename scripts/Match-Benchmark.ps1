@@ -41,9 +41,24 @@ Log "csv: $csv"
 # YOUR line quality. Absolute value is less important than jitter and spikes.
 $pingTarget = '1.1.1.1'
 
+# Detect the active adapter rather than assuming it is called "Ethernet".
+# Hardcoding the name meant Get-NetAdapterStatistics returned null on Wi-Fi or
+# any renamed NIC, and throughput silently reported 0 Mbps forever - which is
+# worse than an error, because the saturation numbers looked fine.
+$nic = Get-NetAdapter -Physical -ErrorAction SilentlyContinue |
+       Where-Object { $_.Status -eq 'Up' } |
+       Sort-Object -Property @{ Expression = { $_.LinkSpeed } } -Descending |
+       Select-Object -First 1
+if (-not $nic) {
+    Log 'WARNING: no active physical network adapter found - throughput will read 0'
+} else {
+    Log "network adapter: $($nic.Name)  ($($nic.InterfaceDescription), $($nic.LinkSpeed))"
+}
+$nicName = $nic.Name
+
 $samples = @()
-$rxLast  = (Get-NetAdapterStatistics -Name Ethernet -EA SilentlyContinue).ReceivedBytes
-$txLast  = (Get-NetAdapterStatistics -Name Ethernet -EA SilentlyContinue).SentBytes
+$rxLast  = (Get-NetAdapterStatistics -Name $nicName -EA SilentlyContinue).ReceivedBytes
+$txLast  = (Get-NetAdapterStatistics -Name $nicName -EA SilentlyContinue).SentBytes
 $tLast   = Get-Date
 $end     = (Get-Date).AddSeconds($Seconds)
 $n       = 0
@@ -52,14 +67,15 @@ while ((Get-Date) -lt $end) {
     $now = Get-Date
 
     # --- network throughput ---
-    $st   = Get-NetAdapterStatistics -Name Ethernet -EA SilentlyContinue
+    $st   = Get-NetAdapterStatistics -Name $nicName -EA SilentlyContinue
     $secs = ($now - $tLast).TotalSeconds
     $down = 0; $up = 0
     if ($secs -gt 0 -and $st) {
         $down = [math]::Round((($st.ReceivedBytes - $rxLast) * 8 / $secs / 1MB), 1)
         $up   = [math]::Round((($st.SentBytes    - $txLast) * 8 / $secs / 1MB), 1)
     }
-    $rxLast = $st.ReceivedBytes; $txLast = $st.SentBytes; $tLast = $now
+    if ($st) { $rxLast = $st.ReceivedBytes; $txLast = $st.SentBytes }
+    $tLast = $now
 
     # --- latency ---
     $ping = $null

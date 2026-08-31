@@ -337,7 +337,8 @@ $interval = 15
 # being blamed on the game.
 # Measured on this line: idle 26ms -> +144ms under download load (p95 503ms, max 694ms).
 $SAT_MBPS = 150          # sustained downlink above this is enough to start queueing
-$rxLast   = (Get-NetAdapterStatistics -Name Ethernet -EA SilentlyContinue).ReceivedBytes
+$llNic    = (Get-NetAdapter -Physical -EA SilentlyContinue | Where-Object { $_.Status -eq 'Up' } | Select-Object -First 1).Name
+$rxLast   = (Get-NetAdapterStatistics -Name $llNic -EA SilentlyContinue).ReceivedBytes
 $rxTime   = Get-Date
 $satWarned = $false
 
@@ -385,7 +386,7 @@ while ($true) {
     }
 
     # ---- downlink saturation check (only meaningful while playing) ----
-    $rxNow  = (Get-NetAdapterStatistics -Name Ethernet -EA SilentlyContinue).ReceivedBytes
+    $rxNow  = (Get-NetAdapterStatistics -Name $llNic -EA SilentlyContinue).ReceivedBytes
     $tNow   = Get-Date
     $secs   = ($tNow - $rxTime).TotalSeconds
     if ($secs -gt 0 -and $rxNow -ge $rxLast) {

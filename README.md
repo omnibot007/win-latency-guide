@@ -170,6 +170,7 @@ ownership in their headers, and the split is enforced by convention:
 | **[Recovery](docs/RECOVERY.md)** | **Your PC will not boot? Start here. Bookmark it before you tweak** |
 | [Contributing](CONTRIBUTING.md) | How to submit a measured result. Negative results welcome |
 | [Changelog](CHANGELOG.md) | What changed and why, including bugs found in this repo itself |
+| **[Deep research](docs/DEEP-RESEARCH.md)** | **Primary-source findings: MMCSS gaps, refresh-locked caps, Epic's own UE guidance, undocumented driver surfaces** |
 | **[Full inventory](docs/FULL-INVENTORY.md)** | **Every single change - all 200+ values, services, tasks and app settings** |
 | [BSOD writeup](docs/BSOD-CRITICAL_PROCESS_DIED.md) | Full root-cause analysis with evidence |
 | [Tweak reference](docs/TWEAK-REFERENCE.md) | Every tweak, with verdict and reasoning |
